@@ -1,8 +1,10 @@
 package com.dwinovo.anima;
 
 import com.dwinovo.anima.telemetry.PlayerDeathTelemetryReporter;
+import com.dwinovo.anima.telemetry.SessionRegistrationService;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.level.ServerPlayer;
 
 public class AnimaMod implements ModInitializer {
@@ -22,6 +24,10 @@ public class AnimaMod implements ModInitializer {
             if (entity instanceof ServerPlayer player) {
                 PlayerDeathTelemetryReporter.report(player, damageSource);
             }
+        });
+
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            SessionRegistrationService.registerOnWorldLoad(handler.player, "fabric-login");
         });
     }
 }
