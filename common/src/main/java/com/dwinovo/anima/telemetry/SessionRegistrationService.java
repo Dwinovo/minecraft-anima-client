@@ -34,6 +34,12 @@ public final class SessionRegistrationService {
         requestJson.addProperty("seed", seed);
 
         Constants.LOG.info("[{}] Using anima_session_id={}, generated={}, seed={}", source, sessionId, generated, seed);
-        TelemetryHttpClient.post("/api/session/register", requestJson, source);
+        AnimaApiClient.post("/api/sessions", requestJson, source);
+    }
+
+    public static String getOrCreateSessionId(MinecraftServer server) {
+        ServerLevel overworld = server.overworld();
+        SessionSavedData sessionData = overworld.getDataStorage().computeIfAbsent(SessionSavedData.factory(), SessionSavedData.DATA_NAME);
+        return sessionData.getOrCreateSessionId();
     }
 }

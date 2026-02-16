@@ -1,14 +1,14 @@
 package com.dwinovo.anima;
 
-import com.dwinovo.anima.telemetry.PlayerDeathTelemetryReporter;
+import com.dwinovo.anima.telemetry.EntityAttackTelemetryReporter;
 import com.dwinovo.anima.telemetry.SessionRegistrationService;
+import com.dwinovo.anima.telemetry.AnimaAgentLoadHandler;
 import com.dwinovo.anima.entity.AnimaEntityProfileLogger;
 import com.dwinovo.anima.registry.FabricEntityRegistry;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.server.level.ServerPlayer;
 
 public class AnimaMod implements ModInitializer {
     
@@ -24,11 +24,9 @@ public class AnimaMod implements ModInitializer {
         CommonClass.init();
         FabricEntityRegistry.init();
 
-        ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
-            if (entity instanceof ServerPlayer player) {
-                PlayerDeathTelemetryReporter.report(player, damageSource);
-            }
-        });
+        ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, damageSource, baseDamageTaken, damageTaken, blocked) ->
+            EntityAttackTelemetryReporter.reportIfSupported(entity, damageSource, damageTaken, "fabric-after-damage")
+        );
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             SessionRegistrationService.registerOnWorldLoad(handler.player, "fabric-login");
@@ -36,6 +34,7 @@ public class AnimaMod implements ModInitializer {
 
         ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> {
             AnimaEntityProfileLogger.logProfileIfSupported(entity);
+            AnimaAgentLoadHandler.onEntityLoaded(entity, "fabric-entity-load");
         });
     }
 }

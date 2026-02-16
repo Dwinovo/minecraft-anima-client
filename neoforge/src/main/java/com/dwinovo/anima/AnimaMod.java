@@ -3,13 +3,14 @@ package com.dwinovo.anima;
 
 import com.dwinovo.anima.entity.AnimaEntityProfileLogger;
 import com.dwinovo.anima.registry.NeoForgeEntityRegistry;
-import com.dwinovo.anima.telemetry.PlayerDeathTelemetryReporter;
+import com.dwinovo.anima.telemetry.AnimaAgentLoadHandler;
+import com.dwinovo.anima.telemetry.EntityAttackTelemetryReporter;
 import com.dwinovo.anima.telemetry.SessionRegistrationService;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -30,15 +31,18 @@ public class AnimaMod {
         eventBus.addListener(NeoForgeEntityRegistry::onEntityAttributes);
         eventBus.addListener(NeoForgeEntityRegistry::onBuildCreativeTabs);
 
-        NeoForge.EVENT_BUS.addListener(this::onLivingDeath);
+        NeoForge.EVENT_BUS.addListener(this::onLivingIncomingDamage);
         NeoForge.EVENT_BUS.addListener(this::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(this::onEntityJoinLevel);
     }
 
-    private void onLivingDeath(LivingDeathEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) {
-            PlayerDeathTelemetryReporter.report(player, event.getSource());
-        }
+    private void onLivingIncomingDamage(LivingIncomingDamageEvent event) {
+        EntityAttackTelemetryReporter.reportIfSupported(
+            event.getEntity(),
+            event.getSource(),
+            event.getAmount(),
+            "neoforge-incoming-damage"
+        );
     }
 
     private void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
@@ -50,6 +54,7 @@ public class AnimaMod {
     private void onEntityJoinLevel(EntityJoinLevelEvent event) {
         if (!event.getLevel().isClientSide()) {
             AnimaEntityProfileLogger.logProfileIfSupported(event.getEntity());
+            AnimaAgentLoadHandler.onEntityLoaded(event.getEntity(), "neoforge-entity-load");
         }
     }
 }

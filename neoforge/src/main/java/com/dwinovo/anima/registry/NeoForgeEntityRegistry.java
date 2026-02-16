@@ -11,6 +11,7 @@ import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.SpawnEggItem;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.common.DeferredSpawnEggItem;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -27,8 +28,8 @@ public final class NeoForgeEntityRegistry {
             .build(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "test_entity").toString())
     );
 
-    public static final DeferredHolder<Item, SpawnEggItem> TEST_ENTITY_SPAWN_EGG = ITEMS.register("test_entity_spawn_egg",
-        () -> new SpawnEggItem(TEST_ENTITY.get(), 0x7F5C2E, 0xF5F5F5, new Item.Properties())
+    public static final DeferredHolder<Item, DeferredSpawnEggItem> TEST_ENTITY_SPAWN_EGG = ITEMS.register("test_entity_spawn_egg",
+        () -> new DeferredSpawnEggItem(TEST_ENTITY, 0x7F5C2E, 0xF5F5F5, new Item.Properties())
     );
 
     private NeoForgeEntityRegistry() {
