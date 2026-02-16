@@ -1,11 +1,14 @@
 package com.dwinovo.anima;
 
 
+import com.dwinovo.anima.entity.AnimaEntityProfileLogger;
+import com.dwinovo.anima.registry.NeoForgeEntityRegistry;
 import com.dwinovo.anima.telemetry.PlayerDeathTelemetryReporter;
 import com.dwinovo.anima.telemetry.SessionRegistrationService;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.minecraft.server.level.ServerPlayer;
@@ -22,9 +25,14 @@ public class AnimaMod {
         // Use NeoForge to bootstrap the Common mod.
         Constants.LOG.info("Hello NeoForge world!");
         CommonClass.init();
+        NeoForgeEntityRegistry.register(eventBus);
+
+        eventBus.addListener(NeoForgeEntityRegistry::onEntityAttributes);
+        eventBus.addListener(NeoForgeEntityRegistry::onBuildCreativeTabs);
 
         NeoForge.EVENT_BUS.addListener(this::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(this::onPlayerLoggedIn);
+        NeoForge.EVENT_BUS.addListener(this::onEntityJoinLevel);
     }
 
     private void onLivingDeath(LivingDeathEvent event) {
@@ -36,6 +44,12 @@ public class AnimaMod {
     private void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             SessionRegistrationService.registerOnWorldLoad(player, "neoforge-login");
+        }
+    }
+
+    private void onEntityJoinLevel(EntityJoinLevelEvent event) {
+        if (!event.getLevel().isClientSide()) {
+            AnimaEntityProfileLogger.logProfileIfSupported(event.getEntity());
         }
     }
 }

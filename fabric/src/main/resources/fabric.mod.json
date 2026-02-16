@@ -17,6 +17,12 @@
     "entrypoints": {
         "main": [
             "com.dwinovo.anima.AnimaMod"
+        ],
+        "client": [
+            "com.dwinovo.anima.AnimaModClient"
+        ],
+        "fabric-datagen": [
+            "com.dwinovo.anima.datagen.FabricAnimaDataGenerator"
         ]
     },
     "depends": {

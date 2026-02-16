@@ -4,7 +4,18 @@ plugins {
 }
 
 dependencies {
-    implementation "com.squareup.okhttp3:okhttp:${okhttp_version}"
+    def okhttpDep = "com.squareup.okhttp3:okhttp:${okhttp_version}"
+
+    jarJar(implementation(okhttpDep))
+}
+
+afterEvaluate {
+    def okhttpDep = "com.squareup.okhttp3:okhttp:${okhttp_version}"
+    dependencies {
+        add("clientAdditionalRuntimeClasspath", okhttpDep)
+        add("serverAdditionalRuntimeClasspath", okhttpDep)
+        add("dataAdditionalRuntimeClasspath", okhttpDep)
+    }
 }
 
 neoForge {
@@ -31,7 +42,9 @@ neoForge {
 
             // DataGen can be run by - "./gradlew :neoforge:runData" in Terminal.
             // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
-            programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+            programArguments.addAll '--mod', project.mod_id, '--all',
+                    '--output', file('src/generated/resources/').getAbsolutePath(),
+                    '--existing', rootProject.file('common/src/main/resources').getAbsolutePath()
 
         }
         server {
