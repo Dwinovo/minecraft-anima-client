@@ -27,8 +27,7 @@ public record EventRequest(
     public record WhoRequest(
         String entity_uuid,
         String entity_name,
-        String entity_type,
-        String perspective
+        String entity_type
     ) {}
 
     public record ActorRequest(

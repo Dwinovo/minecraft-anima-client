@@ -40,8 +40,7 @@ public final class EntityAttackEventFactory {
             new EventRequest.WhoRequest(
                 target.getUUID().toString(),
                 target.getName().getString(),
-                BuiltInRegistries.ENTITY_TYPE.getKey(target.getType()).toString(),
-                "receiver"
+                BuiltInRegistries.ENTITY_TYPE.getKey(target.getType()).toString()
             ),
             new EventRequest.EventBodyRequest(
                 toActor(attacker),
