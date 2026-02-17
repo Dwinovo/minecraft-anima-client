@@ -1,7 +1,6 @@
 package com.dwinovo.anima.telemetry;
 
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
+import com.dwinovo.anima.telemetry.model.EventRequest;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
@@ -13,7 +12,7 @@ public final class EntityAttackEventFactory {
 
     private EntityAttackEventFactory() {}
 
-    public static JsonObject build(
+    public static EventRequest build(
         String sessionId,
         LivingEntity target,
         DamageSource damageSource,
@@ -21,57 +20,52 @@ public final class EntityAttackEventFactory {
     ) {
         long now = System.currentTimeMillis();
         Entity attacker = damageSource.getEntity();
+        String attackerName = attacker == null ? "环境" : attacker.getName().getString();
+        String targetName = target.getName().getString();
+        String damageType = damageSource.type().msgId();
 
-        JsonObject payload = new JsonObject();
-        payload.addProperty("session_id", sessionId);
-
-        JsonObject when = new JsonObject();
-        when.addProperty("iso8601", Instant.ofEpochMilli(now).toString());
-        when.addProperty("epoch_millis", now);
-        when.addProperty("game_time", target.level().getGameTime());
-        payload.add("when", when);
-
-        JsonObject where = new JsonObject();
-        where.addProperty("dimension", target.level().dimension().location().toString());
-        where.addProperty("x", target.getX());
-        where.addProperty("y", target.getY());
-        where.addProperty("z", target.getZ());
-        payload.add("where", where);
-
-        JsonObject who = new JsonObject();
-        who.addProperty("entity_uuid", target.getUUID().toString());
-        who.addProperty("entity_name", target.getName().getString());
-        who.addProperty("entity_type", BuiltInRegistries.ENTITY_TYPE.getKey(target.getType()).toString());
-        who.addProperty("perspective", "receiver");
-        payload.add("who", who);
-
-        JsonObject event = new JsonObject();
-        event.add("subject", toActor(attacker));
-        event.addProperty("action", "entity_attacked");
-        event.add("object", toActor(target));
-
-        JsonObject details = new JsonObject();
-        details.addProperty("damage_type", damageSource.type().msgId());
-        details.addProperty("damage_amount", damageAmount);
-        details.addProperty("damage_source_entity_type", toEntityType(attacker));
-        event.add("details", details);
-
-        payload.add("event", event);
-        return payload;
+        return new EventRequest(
+            new EventRequest.MetaRequest(sessionId),
+            new EventRequest.WhenRequest(
+                Instant.ofEpochMilli(now).toString(),
+                now,
+                target.level().getGameTime()
+            ),
+            new EventRequest.WhereRequest(
+                target.level().dimension().location().toString(),
+                target.getX(),
+                target.getY(),
+                target.getZ()
+            ),
+            new EventRequest.WhoRequest(
+                target.getUUID().toString(),
+                target.getName().getString(),
+                BuiltInRegistries.ENTITY_TYPE.getKey(target.getType()).toString(),
+                "receiver"
+            ),
+            new EventRequest.EventBodyRequest(
+                toActor(attacker),
+                "entity_attacked",
+                toActor(target),
+                new EventRequest.DetailsRequest(
+                    damageType,
+                    damageAmount,
+                    toEntityType(attacker)
+                ),
+                String.format("%s 对 %s 造成了 %.2f 点伤害（伤害类型：%s）。", attackerName, targetName, damageAmount, damageType)
+            )
+        );
     }
 
-    private static JsonObject toActor(Entity entity) {
-        JsonObject actor = new JsonObject();
+    private static EventRequest.ActorRequest toActor(Entity entity) {
         if (entity == null) {
-            actor.add("id", JsonNull.INSTANCE);
-            actor.add("name", JsonNull.INSTANCE);
-            actor.add("type", JsonNull.INSTANCE);
-            return actor;
+            return new EventRequest.ActorRequest(null, null, null);
         }
-        actor.addProperty("id", entity.getUUID().toString());
-        actor.addProperty("name", entity.getName().getString());
-        actor.addProperty("type", toEntityType(entity));
-        return actor;
+        return new EventRequest.ActorRequest(
+            entity.getUUID().toString(),
+            entity.getName().getString(),
+            toEntityType(entity)
+        );
     }
 
     private static String toEntityType(Entity entity) {

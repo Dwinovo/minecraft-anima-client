@@ -1,9 +1,9 @@
 package com.dwinovo.anima.telemetry;
 
 import com.dwinovo.anima.Constants;
+import com.dwinovo.anima.telemetry.model.EventRequest;
+import com.dwinovo.anima.telemetry.model.EventResponse;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.MediaType;
@@ -135,8 +135,8 @@ public final class AnimaApiClient {
         return result;
     }
 
-    public static CompletableFuture<JsonObject> postEvent(JsonObject eventPayload, String source) {
-        CompletableFuture<JsonObject> result = new CompletableFuture<>();
+    public static CompletableFuture<EventResponse.EventDataResponse> postEvent(EventRequest eventPayload, String source) {
+        CompletableFuture<EventResponse.EventDataResponse> result = new CompletableFuture<>();
         String url = buildUrl(EVENTS_ENDPOINT);
 
         Request request = new Request.Builder()
@@ -156,11 +156,11 @@ public final class AnimaApiClient {
                 try (ResponseBody body = response.body()) {
                     String content = body == null ? "" : body.string();
                     try {
-                        JsonObject json = JsonParser.parseString(content).getAsJsonObject();
-                        int code = json.has("code") ? json.get("code").getAsInt() : -1;
-                        if (response.isSuccessful() && (code == 0 || code == 200) && json.has("data") && json.get("data").isJsonObject()) {
+                        EventResponse parsed = GSON.fromJson(content, EventResponse.class);
+                        int code = parsed == null ? -1 : parsed.code();
+                        if (response.isSuccessful() && (code == 0 || code == 200) && parsed != null && parsed.data() != null) {
                             Constants.LOG.info("[{}] POST {} -> HTTP {}, response: {}", source, url, response.code(), content);
-                            result.complete(json.getAsJsonObject("data"));
+                            result.complete(parsed.data());
                         } else {
                             Constants.LOG.warn("[{}] POST {} -> HTTP {}, code={}, response: {}", source, url, response.code(), code, content);
                             result.complete(null);
