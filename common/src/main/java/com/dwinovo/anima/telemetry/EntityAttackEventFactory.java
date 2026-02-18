@@ -7,6 +7,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public final class EntityAttackEventFactory {
 
@@ -18,53 +20,80 @@ public final class EntityAttackEventFactory {
         DamageSource damageSource,
         float damageAmount
     ) {
-        long now = System.currentTimeMillis();
         Entity attacker = damageSource.getEntity();
-        String attackerName = attacker == null ? "环境" : attacker.getName().getString();
-        String targetName = target.getName().getString();
         String damageType = damageSource.type().msgId();
+        String sourceEntityType = toEntityType(attacker);
+        String weapon = toWeapon(attacker);
+
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("damage", damageAmount);
+        details.put("damage_type", damageType);
+        details.put("damage_source_entity_type", sourceEntityType);
+        details.put("weapon", weapon);
 
         return new EventRequest(
-            new EventRequest.MetaRequest(sessionId),
-            new EventRequest.WhenRequest(
-                Instant.ofEpochMilli(now).toString(),
-                now,
-                target.level().getGameTime()
-            ),
-            new EventRequest.WhereRequest(
-                target.level().dimension().location().toString(),
-                target.getX(),
-                target.getY(),
-                target.getZ()
-            ),
-            new EventRequest.WhoRequest(
-                target.getUUID().toString(),
-                target.getName().getString(),
-                BuiltInRegistries.ENTITY_TYPE.getKey(target.getType()).toString()
-            ),
-            new EventRequest.EventBodyRequest(
-                toActor(attacker),
-                "entity_attacked",
-                toActor(target),
-                new EventRequest.DetailsRequest(
-                    damageType,
-                    damageAmount,
-                    toEntityType(attacker)
-                ),
-                String.format("%s 对 %s 造成了 %.2f 点伤害（伤害类型：%s）。", attackerName, targetName, damageAmount, damageType)
-            )
+            sessionId,
+            target.level().getGameTime(),
+            Instant.now().toString(),
+            toSubject(attacker, target),
+            new EventRequest.ActionRequest("ATTACKED", details),
+            toEntity(target)
         );
     }
 
-    private static EventRequest.ActorRequest toActor(Entity entity) {
-        if (entity == null) {
-            return new EventRequest.ActorRequest(null, null, null);
+    private static EventRequest.EntityRequest toSubject(Entity attacker, LivingEntity target) {
+        if (attacker == null) {
+            return new EventRequest.EntityRequest(
+                "environment",
+                "minecraft:environment",
+                "Environment",
+                toLocation(target),
+                Map.of("source", "environment")
+            );
         }
-        return new EventRequest.ActorRequest(
+        return toEntity(attacker);
+    }
+
+    private static EventRequest.EntityRequest toEntity(Entity entity) {
+        if (entity == null) {
+            return null;
+        }
+        return new EventRequest.EntityRequest(
             entity.getUUID().toString(),
+            toEntityType(entity),
             entity.getName().getString(),
-            toEntityType(entity)
+            toLocation(entity),
+            toState(entity)
         );
+    }
+
+    private static EventRequest.LocationRequest toLocation(Entity entity) {
+        if (entity == null) {
+            return null;
+        }
+        String biome = entity.level()
+            .getBiome(entity.blockPosition())
+            .unwrapKey()
+            .map(resourceKey -> resourceKey.location().toString())
+            .orElse("minecraft:unknown");
+        return new EventRequest.LocationRequest(
+            entity.level().dimension().location().toString(),
+            biome,
+            new double[] {entity.getX(), entity.getY(), entity.getZ()}
+        );
+    }
+
+    private static Map<String, Object> toState(Entity entity) {
+        Map<String, Object> state = new LinkedHashMap<>();
+        state.put("is_alive", entity.isAlive());
+
+        if (entity instanceof LivingEntity living) {
+            state.put("health", living.getHealth());
+            state.put("max_health", living.getMaxHealth());
+            state.put("main_hand_item", BuiltInRegistries.ITEM.getKey(living.getMainHandItem().getItem()).toString());
+        }
+
+        return state;
     }
 
     private static String toEntityType(Entity entity) {
@@ -72,5 +101,12 @@ public final class EntityAttackEventFactory {
             return null;
         }
         return BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
+    }
+
+    private static String toWeapon(Entity entity) {
+        if (!(entity instanceof LivingEntity living)) {
+            return null;
+        }
+        return BuiltInRegistries.ITEM.getKey(living.getMainHandItem().getItem()).toString();
     }
 }

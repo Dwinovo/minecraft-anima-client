@@ -157,12 +157,37 @@ public final class AnimaApiClient {
                     String content = body == null ? "" : body.string();
                     try {
                         EventResponse parsed = GSON.fromJson(content, EventResponse.class);
-                        int code = parsed == null ? -1 : parsed.code();
-                        if (response.isSuccessful() && (code == 0 || code == 200) && parsed != null && parsed.data() != null) {
-                            Constants.LOG.info("[{}] POST {} -> HTTP {}, response: {}", source, url, response.code(), content);
-                            result.complete(parsed.data());
+                        int appCode = parsed == null ? -1 : parsed.code();
+                        String appMessage = parsed == null ? null : parsed.message();
+                        EventResponse.EventDataResponse data = parsed == null ? null : parsed.data();
+                        String ackSessionId = data == null ? null : data.session_id();
+
+                        boolean success = response.code() == 201
+                            && appCode == 0
+                            && ackSessionId != null
+                            && !ackSessionId.isBlank();
+
+                        if (success) {
+                            Constants.LOG.info(
+                                "[{}] POST {} -> HTTP {}, code={}, session_id={}, response: {}",
+                                source,
+                                url,
+                                response.code(),
+                                appCode,
+                                ackSessionId,
+                                content
+                            );
+                            result.complete(data);
                         } else {
-                            Constants.LOG.warn("[{}] POST {} -> HTTP {}, code={}, response: {}", source, url, response.code(), code, content);
+                            Constants.LOG.warn(
+                                "[{}] POST {} -> HTTP {}, code={}, message={}, response: {}",
+                                source,
+                                url,
+                                response.code(),
+                                appCode,
+                                appMessage,
+                                content
+                            );
                             result.complete(null);
                         }
                     } catch (Exception exception) {
