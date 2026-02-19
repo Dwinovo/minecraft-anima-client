@@ -3,6 +3,7 @@ package com.dwinovo.anima.telemetry;
 import com.dwinovo.anima.Constants;
 import com.dwinovo.anima.telemetry.model.EventRequest;
 import com.dwinovo.anima.telemetry.model.EventResponse;
+import com.dwinovo.anima.telemetry.model.TickResponse;
 import com.google.gson.Gson;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -29,6 +30,7 @@ public final class AnimaApiClient {
     private static final String AGENTS_ENDPOINT = "/api/agents";
     private static final String SESSIONS_ENDPOINT = "/api/sessions";
     private static final String EVENTS_ENDPOINT = "/api/events";
+    private static final String EVENT_TICK_ENDPOINT = "/api/events/tick";
 
     private AnimaApiClient() {}
 
@@ -201,6 +203,76 @@ public final class AnimaApiClient {
         return result;
     }
 
+    public static CompletableFuture<TickResponse.TickDataResponse> postEventTick(String sessionId, String source) {
+        CompletableFuture<TickResponse.TickDataResponse> result = new CompletableFuture<>();
+        String url = buildUrl(EVENT_TICK_ENDPOINT);
+
+        EventTickRequest payload = new EventTickRequest(sessionId);
+        Request request = new Request.Builder()
+            .url(url)
+            .post(RequestBody.create(GSON.toJson(payload), JSON))
+            .build();
+
+        CLIENT.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException exception) {
+                Constants.LOG.warn("[{}] POST {} failed: {}", source, url, exception.getMessage());
+                result.complete(null);
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                try (ResponseBody body = response.body()) {
+                    String content = body == null ? "" : body.string();
+                    try {
+                        TickResponse parsed = GSON.fromJson(content, TickResponse.class);
+                        int appCode = parsed == null ? -1 : parsed.code();
+                        String appMessage = parsed == null ? null : parsed.message();
+                        TickResponse.TickDataResponse data = parsed == null ? null : parsed.data();
+                        String ackSessionId = data == null ? null : data.session_id();
+
+                        boolean success = response.code() == 200
+                            && appCode == 0
+                            && ackSessionId != null
+                            && !ackSessionId.isBlank();
+
+                        if (success) {
+                            Constants.LOG.info(
+                                "[{}] POST {} -> HTTP {}, code={}, session_id={}, total={}, succeeded={}, failed={}, response: {}",
+                                source,
+                                url,
+                                response.code(),
+                                appCode,
+                                ackSessionId,
+                                data.total_agents(),
+                                data.succeeded(),
+                                data.failed(),
+                                content
+                            );
+                            result.complete(data);
+                        } else {
+                            Constants.LOG.warn(
+                                "[{}] POST {} -> HTTP {}, code={}, message={}, response: {}",
+                                source,
+                                url,
+                                response.code(),
+                                appCode,
+                                appMessage,
+                                content
+                            );
+                            result.complete(null);
+                        }
+                    } catch (Exception exception) {
+                        Constants.LOG.warn("[{}] POST {} parse response failed: {}", source, url, exception.getMessage());
+                        result.complete(null);
+                    }
+                }
+            }
+        });
+
+        return result;
+    }
+
     private static String buildUrl(String endpoint) {
         String normalized = endpoint.startsWith("/") ? endpoint : "/" + endpoint;
         return BASE_URL + normalized;
@@ -216,5 +288,9 @@ public final class AnimaApiClient {
     private record SessionInitRequest(
         String session_id,
         String world_name
+    ) {}
+
+    private record EventTickRequest(
+        String session_id
     ) {}
 }

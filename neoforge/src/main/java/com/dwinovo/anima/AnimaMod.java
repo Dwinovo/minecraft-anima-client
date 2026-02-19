@@ -1,6 +1,7 @@
 package com.dwinovo.anima;
 
 
+import com.dwinovo.anima.command.AnimaCommand;
 import com.dwinovo.anima.entity.AnimaEntityProfileLogger;
 import com.dwinovo.anima.registry.NeoForgeEntityRegistry;
 import com.dwinovo.anima.telemetry.AnimaAgentLoadHandler;
@@ -12,6 +13,7 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.minecraft.server.level.ServerPlayer;
 
 @Mod(Constants.MOD_ID)
@@ -34,6 +36,7 @@ public class AnimaMod {
         NeoForge.EVENT_BUS.addListener(this::onLivingIncomingDamage);
         NeoForge.EVENT_BUS.addListener(this::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(this::onEntityJoinLevel);
+        NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
     }
 
     private void onLivingIncomingDamage(LivingIncomingDamageEvent event) {
@@ -56,5 +59,9 @@ public class AnimaMod {
             AnimaEntityProfileLogger.logProfileIfSupported(event.getEntity());
             AnimaAgentLoadHandler.onEntityLoaded(event.getEntity(), "neoforge-entity-load");
         }
+    }
+
+    private void onRegisterCommands(RegisterCommandsEvent event) {
+        AnimaCommand.register(event.getDispatcher());
     }
 }

@@ -1,5 +1,6 @@
 package com.dwinovo.anima;
 
+import com.dwinovo.anima.command.AnimaCommand;
 import com.dwinovo.anima.telemetry.EntityAttackTelemetryReporter;
 import com.dwinovo.anima.telemetry.SessionRegistrationService;
 import com.dwinovo.anima.telemetry.AnimaAgentLoadHandler;
@@ -7,6 +8,7 @@ import com.dwinovo.anima.entity.AnimaEntityProfileLogger;
 import com.dwinovo.anima.registry.FabricEntityRegistry;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 
@@ -36,5 +38,9 @@ public class AnimaMod implements ModInitializer {
             AnimaEntityProfileLogger.logProfileIfSupported(entity);
             AnimaAgentLoadHandler.onEntityLoaded(entity, "fabric-entity-load");
         });
+
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
+            AnimaCommand.register(dispatcher)
+        );
     }
 }
