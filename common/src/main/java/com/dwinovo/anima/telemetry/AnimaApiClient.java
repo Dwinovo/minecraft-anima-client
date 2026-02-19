@@ -4,6 +4,9 @@ import com.dwinovo.anima.Constants;
 import com.dwinovo.anima.telemetry.model.EventRequest;
 import com.dwinovo.anima.telemetry.model.EventResponse;
 import com.dwinovo.anima.telemetry.model.TickResponse;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.Gson;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -225,25 +228,15 @@ public final class AnimaApiClient {
                 try (ResponseBody body = response.body()) {
                     String content = body == null ? "" : body.string();
                     try {
-                        TickResponse parsed = GSON.fromJson(content, TickResponse.class);
-                        int appCode = parsed == null ? -1 : parsed.code();
-                        String appMessage = parsed == null ? null : parsed.message();
-                        TickResponse.TickDataResponse data = parsed == null ? null : parsed.data();
-                        String ackSessionId = data == null ? null : data.session_id();
-
-                        boolean success = response.code() == 200
-                            && appCode == 0
-                            && ackSessionId != null
-                            && !ackSessionId.isBlank();
-
-                        if (success) {
+                        TickResponse.TickDataResponse data = parseTickData(response.code(), content, sessionId);
+                        if (data != null) {
                             Constants.LOG.info(
                                 "[{}] POST {} -> HTTP {}, code={}, session_id={}, total={}, succeeded={}, failed={}, response: {}",
                                 source,
                                 url,
                                 response.code(),
-                                appCode,
-                                ackSessionId,
+                                0,
+                                data.session_id(),
                                 data.total_agents(),
                                 data.succeeded(),
                                 data.failed(),
@@ -252,12 +245,10 @@ public final class AnimaApiClient {
                             result.complete(data);
                         } else {
                             Constants.LOG.warn(
-                                "[{}] POST {} -> HTTP {}, code={}, message={}, response: {}",
+                                "[{}] POST {} -> HTTP {}, unresolved tick response: {}",
                                 source,
                                 url,
                                 response.code(),
-                                appCode,
-                                appMessage,
                                 content
                             );
                             result.complete(null);
@@ -271,6 +262,111 @@ public final class AnimaApiClient {
         });
 
         return result;
+    }
+
+    static TickResponse.TickDataResponse parseTickData(
+        int httpCode,
+        String content,
+        String requestedSessionId
+    ) {
+        if (!isSuccessHttpStatus(httpCode) || content == null || content.isBlank()) {
+            return null;
+        }
+
+        TickResponse.TickDataResponse legacyData = parseLegacyTickData(content);
+        if (legacyData != null) {
+            return legacyData;
+        }
+
+        TickResponse.TickDataResponse wrappedAcceptedData = parseWrappedAcceptedData(content, requestedSessionId);
+        if (wrappedAcceptedData != null) {
+            return wrappedAcceptedData;
+        }
+
+        return parseBareAcceptedData(content, requestedSessionId);
+    }
+
+    private static TickResponse.TickDataResponse parseLegacyTickData(String content) {
+        TickResponse parsed = GSON.fromJson(content, TickResponse.class);
+        if (parsed == null || parsed.code() != 0 || parsed.data() == null) {
+            return null;
+        }
+
+        String ackSessionId = parsed.data().session_id();
+        if (ackSessionId == null || ackSessionId.isBlank()) {
+            return null;
+        }
+        return parsed.data();
+    }
+
+    private static TickResponse.TickDataResponse parseWrappedAcceptedData(
+        String content,
+        String requestedSessionId
+    ) {
+        TickAcceptedResponse parsed = GSON.fromJson(content, TickAcceptedResponse.class);
+        TickAcceptedData acceptedData = parsed == null ? null : parsed.data();
+        String status = acceptedData == null ? null : acceptedData.status();
+        if (parsed == null || parsed.code() != 0 || !isAcceptedStatus(status)) {
+            return null;
+        }
+
+        String ackSessionId = firstNonBlank(acceptedData.session_id(), requestedSessionId);
+        if (ackSessionId == null) {
+            return null;
+        }
+        return new TickResponse.TickDataResponse(ackSessionId, 0, 0, 0, null);
+    }
+
+    private static TickResponse.TickDataResponse parseBareAcceptedData(
+        String content,
+        String requestedSessionId
+    ) {
+        JsonElement root = JsonParser.parseString(content);
+        if (!root.isJsonObject()) {
+            return null;
+        }
+
+        JsonObject object = root.getAsJsonObject();
+        String status = readString(object, "status");
+        if (!isAcceptedStatus(status)) {
+            return null;
+        }
+
+        String ackSessionId = firstNonBlank(readString(object, "session_id"), requestedSessionId);
+        if (ackSessionId == null) {
+            return null;
+        }
+        return new TickResponse.TickDataResponse(ackSessionId, 0, 0, 0, null);
+    }
+
+    private static boolean isSuccessHttpStatus(int httpCode) {
+        return httpCode >= 200 && httpCode < 300;
+    }
+
+    private static boolean isAcceptedStatus(String status) {
+        return status != null && "accepted".equalsIgnoreCase(status);
+    }
+
+    private static String readString(JsonObject object, String key) {
+        if (!object.has(key)) {
+            return null;
+        }
+
+        JsonElement value = object.get(key);
+        if (value == null || value.isJsonNull() || !value.isJsonPrimitive()) {
+            return null;
+        }
+        return value.getAsString();
+    }
+
+    private static String firstNonBlank(String first, String second) {
+        if (first != null && !first.isBlank()) {
+            return first;
+        }
+        if (second != null && !second.isBlank()) {
+            return second;
+        }
+        return null;
     }
 
     private static String buildUrl(String endpoint) {
@@ -291,6 +387,17 @@ public final class AnimaApiClient {
     ) {}
 
     private record EventTickRequest(
+        String session_id
+    ) {}
+
+    private record TickAcceptedResponse(
+        int code,
+        String message,
+        TickAcceptedData data
+    ) {}
+
+    private record TickAcceptedData(
+        String status,
         String session_id
     ) {}
 }

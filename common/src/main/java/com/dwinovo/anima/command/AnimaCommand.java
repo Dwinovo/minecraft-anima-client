@@ -66,6 +66,19 @@ public final class AnimaCommand {
             return;
         }
 
+        if (
+            data.total_agents() == 0
+                && data.succeeded() == 0
+                && data.failed() == 0
+                && data.results().isEmpty()
+        ) {
+            source.sendSuccess(
+                () -> Component.literal("Anima tick accepted, running in background, session_id=" + ackSessionId),
+                false
+            );
+            return;
+        }
+
         source.sendSuccess(
             () -> Component.literal(
                 "Anima tick finished, session_id="
