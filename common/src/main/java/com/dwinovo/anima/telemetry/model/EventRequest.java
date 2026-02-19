@@ -17,17 +17,19 @@ public record EventRequest(
         double[] coordinates
     ) {}
 
+    // 纯粹的生存指标状态，无冗余字段
+    public record EntityStateRequest(
+        float health,
+        float max_health
+    ) {}
+
     public record EntityRequest(
         String entity_id,
         String entity_type,
         String name,
         LocationRequest location,
-        Map<String, Object> state
-    ) {
-        public EntityRequest {
-            state = state == null ? Collections.emptyMap() : state;
-        }
-    }
+        EntityStateRequest state
+    ) {}
 
     public record ActionRequest(
         String verb,

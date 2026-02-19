@@ -12,6 +12,9 @@ import java.util.Map;
 
 public final class EntityAttackEventFactory {
 
+    private static final EventRequest.EntityStateRequest EMPTY_STATE =
+        new EventRequest.EntityStateRequest(0.0F, 0.0F);
+
     private EntityAttackEventFactory() {}
 
     public static EventRequest build(
@@ -48,7 +51,7 @@ public final class EntityAttackEventFactory {
                 "minecraft:environment",
                 "Environment",
                 toLocation(target),
-                Map.of("source", "environment")
+                EMPTY_STATE
             );
         }
         return toEntity(attacker);
@@ -83,17 +86,14 @@ public final class EntityAttackEventFactory {
         );
     }
 
-    private static Map<String, Object> toState(Entity entity) {
-        Map<String, Object> state = new LinkedHashMap<>();
-        state.put("is_alive", entity.isAlive());
-
+    private static EventRequest.EntityStateRequest toState(Entity entity) {
         if (entity instanceof LivingEntity living) {
-            state.put("health", living.getHealth());
-            state.put("max_health", living.getMaxHealth());
-            state.put("main_hand_item", BuiltInRegistries.ITEM.getKey(living.getMainHandItem().getItem()).toString());
+            return new EventRequest.EntityStateRequest(
+                living.getHealth(),
+                living.getMaxHealth()
+            );
         }
-
-        return state;
+        return EMPTY_STATE;
     }
 
     private static String toEntityType(Entity entity) {
