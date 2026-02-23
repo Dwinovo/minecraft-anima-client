@@ -17,6 +17,16 @@ public final class EntityAttackTelemetryReporter {
         float damageAmount,
         String source
     ) {
+        reportIfSupported(target, damageSource, damageAmount, source, false);
+    }
+
+    public static void reportIfSupported(
+        LivingEntity target,
+        DamageSource damageSource,
+        float damageAmount,
+        String source,
+        boolean healthSnapshotBeforeDamage
+    ) {
         if (target.level().isClientSide() || !(target instanceof IAnimaEntity)) {
             return;
         }
@@ -26,8 +36,24 @@ public final class EntityAttackTelemetryReporter {
             return;
         }
 
+        float currentHealth = target.getHealth();
+        float maxHealth = target.getMaxHealth();
+        float victimHealthBefore = healthSnapshotBeforeDamage
+            ? clampHealth(currentHealth, maxHealth)
+            : clampHealth(currentHealth + damageAmount, maxHealth);
+        float victimHealthAfter = healthSnapshotBeforeDamage
+            ? clampHealth(currentHealth - damageAmount, maxHealth)
+            : clampHealth(currentHealth, maxHealth);
+
         String sessionId = SessionRegistrationService.getOrCreateSessionId(server);
-        EventRequest payload = EntityAttackEventFactory.build(sessionId, target, damageSource, damageAmount);
+        EventRequest payload = EntityAttackEventFactory.build(
+            sessionId,
+            target,
+            damageSource,
+            damageAmount,
+            victimHealthBefore,
+            victimHealthAfter
+        );
         AnimaApiClient.postEvent(payload, source).thenAccept(data -> {
             if (data == null) {
                 Constants.LOG.warn("[{}] Event upload failed for entity_uuid={}", source, target.getUUID());
@@ -53,5 +79,12 @@ public final class EntityAttackTelemetryReporter {
 
             Constants.LOG.info("[{}] Event created, session_id={}, entity_uuid={}", source, ackSessionId, target.getUUID());
         });
+    }
+
+    private static float clampHealth(float health, float maxHealth) {
+        if (health <= 0.0F) {
+            return 0.0F;
+        }
+        return Math.min(health, maxHealth);
     }
 }

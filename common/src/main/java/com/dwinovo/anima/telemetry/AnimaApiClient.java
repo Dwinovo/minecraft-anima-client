@@ -1,6 +1,9 @@
 package com.dwinovo.anima.telemetry;
 
 import com.dwinovo.anima.Constants;
+import com.dwinovo.anima.telemetry.model.AgentActivateRequest;
+import com.dwinovo.anima.telemetry.model.AgentDeactivateRequest;
+import com.dwinovo.anima.telemetry.model.AgentLifecycleResponse;
 import com.dwinovo.anima.telemetry.model.EventRequest;
 import com.dwinovo.anima.telemetry.model.EventResponse;
 import com.dwinovo.anima.telemetry.model.TickResponse;
@@ -71,10 +74,16 @@ public final class AnimaApiClient {
         String profile,
         String source
     ) {
-        CompletableFuture<Boolean> result = new CompletableFuture<>();
-        String url = buildUrl(AGENTS_ENDPOINT);
+        AgentActivateRequest payload = new AgentActivateRequest(sessionId, entityUuid, entityType, profile);
+        return postAgentActivate(payload, source).thenApply(data -> data != null);
+    }
 
-        AgentInitRequest payload = new AgentInitRequest(sessionId, entityUuid, entityType, profile);
+    public static CompletableFuture<AgentLifecycleResponse.AgentLifecycleData> postAgentActivate(
+        AgentActivateRequest payload,
+        String source
+    ) {
+        CompletableFuture<AgentLifecycleResponse.AgentLifecycleData> result = new CompletableFuture<>();
+        String url = buildUrl(AGENTS_ENDPOINT);
         Request request = new Request.Builder()
             .url(url)
             .post(RequestBody.create(GSON.toJson(payload), JSON))
@@ -84,19 +93,77 @@ public final class AnimaApiClient {
             @Override
             public void onFailure(Call call, IOException exception) {
                 Constants.LOG.warn("[{}] POST {} failed: {}", source, url, exception.getMessage());
-                result.complete(false);
+                result.complete(null);
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 try (ResponseBody body = response.body()) {
                     String content = body == null ? "" : body.string();
-                    if (response.isSuccessful()) {
-                        Constants.LOG.info("[{}] POST {} -> HTTP {}, response: {}", source, url, response.code(), content);
-                        result.complete(true);
+                    AgentLifecycleResponse.AgentLifecycleData data = parseAgentLifecycleData(response.code(), content);
+                    if (data != null) {
+                        Constants.LOG.info(
+                            "[{}] POST {} -> HTTP {}, status={}, thread_id={}, lifecycle_status={}, version={}, response: {}",
+                            source,
+                            url,
+                            response.code(),
+                            data.status(),
+                            data.thread_id(),
+                            data.lifecycle_status(),
+                            data.version(),
+                            content
+                        );
+                        result.complete(data);
                     } else {
-                        Constants.LOG.warn("[{}] POST {} -> HTTP {}, response: {}", source, url, response.code(), content);
-                        result.complete(false);
+                        Constants.LOG.warn("[{}] POST {} -> HTTP {}, invalid response: {}", source, url, response.code(), content);
+                        result.complete(null);
+                    }
+                }
+            }
+        });
+
+        return result;
+    }
+
+    public static CompletableFuture<AgentLifecycleResponse.AgentLifecycleData> deleteAgentDeactivate(
+        AgentDeactivateRequest payload,
+        String source
+    ) {
+        CompletableFuture<AgentLifecycleResponse.AgentLifecycleData> result = new CompletableFuture<>();
+        String url = buildUrl(AGENTS_ENDPOINT);
+        Request request = new Request.Builder()
+            .url(url)
+            .delete(RequestBody.create(GSON.toJson(payload), JSON))
+            .build();
+
+        CLIENT.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException exception) {
+                Constants.LOG.warn("[{}] DELETE {} failed: {}", source, url, exception.getMessage());
+                result.complete(null);
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                try (ResponseBody body = response.body()) {
+                    String content = body == null ? "" : body.string();
+                    AgentLifecycleResponse.AgentLifecycleData data = parseAgentLifecycleData(response.code(), content);
+                    if (data != null) {
+                        Constants.LOG.info(
+                            "[{}] DELETE {} -> HTTP {}, status={}, thread_id={}, lifecycle_status={}, version={}, response: {}",
+                            source,
+                            url,
+                            response.code(),
+                            data.status(),
+                            data.thread_id(),
+                            data.lifecycle_status(),
+                            data.version(),
+                            content
+                        );
+                        result.complete(data);
+                    } else {
+                        Constants.LOG.warn("[{}] DELETE {} -> HTTP {}, invalid response: {}", source, url, response.code(), content);
+                        result.complete(null);
                     }
                 }
             }
@@ -286,6 +353,33 @@ public final class AnimaApiClient {
         return parseBareAcceptedData(content, requestedSessionId);
     }
 
+    static AgentLifecycleResponse.AgentLifecycleData parseAgentLifecycleData(
+        int httpCode,
+        String content
+    ) {
+        if (!isSuccessHttpStatus(httpCode) || content == null || content.isBlank()) {
+            return null;
+        }
+
+        try {
+            AgentLifecycleResponse parsed = GSON.fromJson(content, AgentLifecycleResponse.class);
+            AgentLifecycleResponse.AgentLifecycleData data = parsed == null ? null : parsed.data();
+            if (parsed == null || parsed.code() != 0 || data == null) {
+                return null;
+            }
+
+            if (data.thread_id() == null || data.thread_id().isBlank()) {
+                return null;
+            }
+            if (data.lifecycle_status() == null || data.lifecycle_status().isBlank()) {
+                return null;
+            }
+            return data;
+        } catch (Exception exception) {
+            return null;
+        }
+    }
+
     private static TickResponse.TickDataResponse parseLegacyTickData(String content) {
         TickResponse parsed = GSON.fromJson(content, TickResponse.class);
         if (parsed == null || parsed.code() != 0 || parsed.data() == null) {
@@ -373,13 +467,6 @@ public final class AnimaApiClient {
         String normalized = endpoint.startsWith("/") ? endpoint : "/" + endpoint;
         return BASE_URL + normalized;
     }
-
-    private record AgentInitRequest(
-        String session_id,
-        String entity_uuid,
-        String entity_type,
-        String profile
-    ) {}
 
     private record SessionInitRequest(
         String session_id,

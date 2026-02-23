@@ -2,8 +2,10 @@ package com.dwinovo.anima;
 
 import com.dwinovo.anima.command.AnimaCommand;
 import com.dwinovo.anima.telemetry.EntityAttackTelemetryReporter;
+import com.dwinovo.anima.telemetry.SocialEventTelemetryReporter;
 import com.dwinovo.anima.telemetry.SessionRegistrationService;
 import com.dwinovo.anima.telemetry.AnimaAgentLoadHandler;
+import com.dwinovo.anima.telemetry.AnimaAgentUnloadHandler;
 import com.dwinovo.anima.entity.AnimaEntityProfileLogger;
 import com.dwinovo.anima.registry.FabricEntityRegistry;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
@@ -27,7 +29,17 @@ public class AnimaMod implements ModInitializer {
         FabricEntityRegistry.init();
 
         ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, damageSource, baseDamageTaken, damageTaken, blocked) ->
-            EntityAttackTelemetryReporter.reportIfSupported(entity, damageSource, damageTaken, "fabric-after-damage")
+            EntityAttackTelemetryReporter.reportIfSupported(
+                entity,
+                damageSource,
+                damageTaken,
+                "fabric-after-damage",
+                false
+            )
+        );
+
+        ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) ->
+            SocialEventTelemetryReporter.reportLivingDeath(entity, damageSource, "fabric-after-death")
         );
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
@@ -37,6 +49,10 @@ public class AnimaMod implements ModInitializer {
         ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> {
             AnimaEntityProfileLogger.logProfileIfSupported(entity);
             AnimaAgentLoadHandler.onEntityLoaded(entity, "fabric-entity-load");
+        });
+
+        ServerEntityEvents.ENTITY_UNLOAD.register((entity, world) -> {
+            AnimaAgentUnloadHandler.onEntityUnloaded(entity, "fabric-entity-unload");
         });
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->

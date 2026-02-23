@@ -5,12 +5,16 @@ import com.dwinovo.anima.command.AnimaCommand;
 import com.dwinovo.anima.entity.AnimaEntityProfileLogger;
 import com.dwinovo.anima.registry.NeoForgeEntityRegistry;
 import com.dwinovo.anima.telemetry.AnimaAgentLoadHandler;
+import com.dwinovo.anima.telemetry.AnimaAgentUnloadHandler;
 import com.dwinovo.anima.telemetry.EntityAttackTelemetryReporter;
+import com.dwinovo.anima.telemetry.SocialEventTelemetryReporter;
 import com.dwinovo.anima.telemetry.SessionRegistrationService;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -34,8 +38,10 @@ public class AnimaMod {
         eventBus.addListener(NeoForgeEntityRegistry::onBuildCreativeTabs);
 
         NeoForge.EVENT_BUS.addListener(this::onLivingIncomingDamage);
+        NeoForge.EVENT_BUS.addListener(this::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(this::onPlayerLoggedIn);
         NeoForge.EVENT_BUS.addListener(this::onEntityJoinLevel);
+        NeoForge.EVENT_BUS.addListener(this::onEntityLeaveLevel);
         NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
     }
 
@@ -44,7 +50,16 @@ public class AnimaMod {
             event.getEntity(),
             event.getSource(),
             event.getAmount(),
-            "neoforge-incoming-damage"
+            "neoforge-incoming-damage",
+            true
+        );
+    }
+
+    private void onLivingDeath(LivingDeathEvent event) {
+        SocialEventTelemetryReporter.reportLivingDeath(
+            event.getEntity(),
+            event.getSource(),
+            "neoforge-living-death"
         );
     }
 
@@ -59,6 +74,13 @@ public class AnimaMod {
             AnimaEntityProfileLogger.logProfileIfSupported(event.getEntity());
             AnimaAgentLoadHandler.onEntityLoaded(event.getEntity(), "neoforge-entity-load");
         }
+    }
+
+    private void onEntityLeaveLevel(EntityLeaveLevelEvent event) {
+        if (event.getLevel().isClientSide()) {
+            return;
+        }
+        AnimaAgentUnloadHandler.onEntityUnloaded(event.getEntity(), "neoforge-entity-unload");
     }
 
     private void onRegisterCommands(RegisterCommandsEvent event) {
