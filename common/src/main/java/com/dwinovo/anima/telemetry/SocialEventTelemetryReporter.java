@@ -38,6 +38,7 @@ public final class SocialEventTelemetryReporter {
 
         String sessionId = SessionRegistrationService.getOrCreateSessionId(server);
         EventRequest payload = SocialEventFactory.buildLivingDeathEvent(sessionId, victim, damageSource);
+        HelpedEventTelemetryReporter.reportDeath(victim, damageSource, source, sessionId);
         uploadEvent(sessionId, payload, source, victim.getUUID().toString());
     }
 

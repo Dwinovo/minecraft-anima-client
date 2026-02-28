@@ -54,6 +54,13 @@ public final class EntityAttackTelemetryReporter {
             victimHealthBefore,
             victimHealthAfter
         );
+        HelpedEventTelemetryReporter.reportAttack(
+            target,
+            damageSource,
+            damageAmount,
+            source,
+            sessionId
+        );
         AnimaApiClient.postEvent(payload, source).thenAccept(data -> {
             if (data == null) {
                 Constants.LOG.warn("[{}] Event upload failed for entity_uuid={}", source, target.getUUID());

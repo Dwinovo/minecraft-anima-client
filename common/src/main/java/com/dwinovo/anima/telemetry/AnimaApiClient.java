@@ -21,6 +21,7 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -208,7 +209,13 @@ public final class AnimaApiClient {
     }
 
     public static CompletableFuture<EventResponse.EventDataResponse> postEvent(EventRequest eventPayload, String source) {
-        CompletableFuture<EventResponse.EventDataResponse> result = new CompletableFuture<>();
+        return postEventWithStatus(eventPayload, source).thenApply(result ->
+            result != null && result.success() ? result.data() : null
+        );
+    }
+
+    public static CompletableFuture<EventPostResult> postEventWithStatus(EventRequest eventPayload, String source) {
+        CompletableFuture<EventPostResult> result = new CompletableFuture<>();
         String url = buildUrl(EVENTS_ENDPOINT);
 
         Request request = new Request.Builder()
@@ -220,7 +227,7 @@ public final class AnimaApiClient {
             @Override
             public void onFailure(Call call, IOException exception) {
                 Constants.LOG.warn("[{}] POST {} failed: {}", source, url, exception.getMessage());
-                result.complete(null);
+                result.complete(new EventPostResult(false, -1, -1, exception.getMessage(), null, ""));
             }
 
             @Override
@@ -249,7 +256,6 @@ public final class AnimaApiClient {
                                 ackSessionId,
                                 content
                             );
-                            result.complete(data);
                         } else {
                             Constants.LOG.warn(
                                 "[{}] POST {} -> HTTP {}, code={}, message={}, response: {}",
@@ -260,11 +266,11 @@ public final class AnimaApiClient {
                                 appMessage,
                                 content
                             );
-                            result.complete(null);
                         }
+                        result.complete(new EventPostResult(success, response.code(), appCode, appMessage, data, content));
                     } catch (Exception exception) {
                         Constants.LOG.warn("[{}] POST {} parse response failed: {}", source, url, exception.getMessage());
-                        result.complete(null);
+                        result.complete(new EventPostResult(false, response.code(), -1, exception.getMessage(), null, content));
                     }
                 }
             }
@@ -487,4 +493,23 @@ public final class AnimaApiClient {
         String status,
         String session_id
     ) {}
+
+    public record EventPostResult(
+        boolean success,
+        int httpCode,
+        int appCode,
+        String appMessage,
+        EventResponse.EventDataResponse data,
+        String rawBody
+    ) {
+        public boolean isUnsupportedVerb422() {
+            if (httpCode != 422) {
+                return false;
+            }
+            String normalizedMessage = appMessage == null ? "" : appMessage.toLowerCase(Locale.ROOT);
+            String normalizedBody = rawBody == null ? "" : rawBody.toLowerCase(Locale.ROOT);
+            String merged = normalizedMessage + " " + normalizedBody;
+            return merged.contains("unsupported") || merged.contains("verb");
+        }
+    }
 }
