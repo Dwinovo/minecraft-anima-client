@@ -6,6 +6,7 @@ import com.dwinovo.anima.telemetry.model.AgentDeactivateRequest;
 import com.dwinovo.anima.telemetry.model.AgentLifecycleResponse;
 import com.dwinovo.anima.telemetry.model.EventRequest;
 import com.dwinovo.anima.telemetry.model.EventResponse;
+import com.dwinovo.anima.telemetry.model.SessionSnapshotResponse;
 import com.dwinovo.anima.telemetry.model.TickResponse;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -21,6 +22,8 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -208,6 +211,61 @@ public final class AnimaApiClient {
         return result;
     }
 
+    public static CompletableFuture<SessionSnapshotResponse.SessionSnapshotData> getSessionSnapshot(
+        String sessionId,
+        String source
+    ) {
+        CompletableFuture<SessionSnapshotResponse.SessionSnapshotData> result = new CompletableFuture<>();
+        if (sessionId == null || sessionId.isBlank()) {
+            Constants.LOG.warn("[{}] GET {} failed: empty session_id", source, SESSIONS_ENDPOINT + "/{session_id}");
+            result.complete(null);
+            return result;
+        }
+
+        String endpoint = SESSIONS_ENDPOINT + "/" + encodePathSegment(sessionId);
+        String url = buildUrl(endpoint);
+        Request request = new Request.Builder()
+            .url(url)
+            .get()
+            .build();
+
+        CLIENT.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException exception) {
+                Constants.LOG.warn("[{}] GET {} failed: {}", source, url, exception.getMessage());
+                result.complete(null);
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                try (ResponseBody body = response.body()) {
+                    String content = body == null ? "" : body.string();
+                    SessionSnapshotResponse.SessionSnapshotData data = parseSessionSnapshotData(response.code(), content);
+                    if (data != null) {
+                        Constants.LOG.info(
+                            "[{}] GET {} -> HTTP {}, code={}, session_id={}, posts={}, comments={}, likes={}, response: {}",
+                            source,
+                            url,
+                            response.code(),
+                            0,
+                            data.session_id(),
+                            data.total_posts(),
+                            data.total_comments(),
+                            data.total_likes(),
+                            content
+                        );
+                        result.complete(data);
+                    } else {
+                        Constants.LOG.warn("[{}] GET {} -> HTTP {}, invalid response: {}", source, url, response.code(), content);
+                        result.complete(null);
+                    }
+                }
+            }
+        });
+
+        return result;
+    }
+
     public static CompletableFuture<EventResponse.EventDataResponse> postEvent(EventRequest eventPayload, String source) {
         return postEventWithStatus(eventPayload, source).thenApply(result ->
             result != null && result.success() ? result.data() : null
@@ -386,6 +444,29 @@ public final class AnimaApiClient {
         }
     }
 
+    static SessionSnapshotResponse.SessionSnapshotData parseSessionSnapshotData(
+        int httpCode,
+        String content
+    ) {
+        if (!isSuccessHttpStatus(httpCode) || content == null || content.isBlank()) {
+            return null;
+        }
+
+        try {
+            SessionSnapshotResponse parsed = GSON.fromJson(content, SessionSnapshotResponse.class);
+            SessionSnapshotResponse.SessionSnapshotData data = parsed == null ? null : parsed.data();
+            if (parsed == null || parsed.code() != 0 || data == null) {
+                return null;
+            }
+            if (data.session_id() == null || data.session_id().isBlank()) {
+                return null;
+            }
+            return data;
+        } catch (Exception exception) {
+            return null;
+        }
+    }
+
     private static TickResponse.TickDataResponse parseLegacyTickData(String content) {
         TickResponse parsed = GSON.fromJson(content, TickResponse.class);
         if (parsed == null || parsed.code() != 0 || parsed.data() == null) {
@@ -472,6 +553,10 @@ public final class AnimaApiClient {
     private static String buildUrl(String endpoint) {
         String normalized = endpoint.startsWith("/") ? endpoint : "/" + endpoint;
         return BASE_URL + normalized;
+    }
+
+    private static String encodePathSegment(String segment) {
+        return URLEncoder.encode(segment, StandardCharsets.UTF_8).replace("+", "%20");
     }
 
     private record SessionInitRequest(

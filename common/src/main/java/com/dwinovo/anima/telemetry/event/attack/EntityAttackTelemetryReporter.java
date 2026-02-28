@@ -1,6 +1,5 @@
 package com.dwinovo.anima.telemetry.event.attack;
 
-import com.dwinovo.anima.entity.IAnimaEntity;
 import com.dwinovo.anima.telemetry.event.core.EventUploadReporter;
 import com.dwinovo.anima.telemetry.event.helped.HelpedEventTelemetryReporter;
 import com.dwinovo.anima.telemetry.model.EventRequest;
@@ -31,7 +30,7 @@ public final class EntityAttackTelemetryReporter {
         String source,
         boolean healthSnapshotBeforeDamage
     ) {
-        if (target.level().isClientSide() || !(target instanceof IAnimaEntity)) {
+        if (target.level().isClientSide()) {
             return;
         }
 

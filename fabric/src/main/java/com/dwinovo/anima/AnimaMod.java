@@ -7,7 +7,6 @@ import com.dwinovo.anima.telemetry.session.SessionRegistrationService;
 import com.dwinovo.anima.telemetry.agent.AnimaAgentLoadHandler;
 import com.dwinovo.anima.telemetry.agent.AnimaAgentUnloadHandler;
 import com.dwinovo.anima.entity.AnimaEntityProfileLogger;
-import com.dwinovo.anima.registry.FabricEntityRegistry;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -26,7 +25,6 @@ public class AnimaMod implements ModInitializer {
         // Use Fabric to bootstrap the Common mod.
         Constants.LOG.info("Hello Fabric world!");
         CommonClass.init();
-        FabricEntityRegistry.init();
 
         ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, damageSource, baseDamageTaken, damageTaken, blocked) ->
             EntityAttackTelemetryReporter.reportIfSupported(

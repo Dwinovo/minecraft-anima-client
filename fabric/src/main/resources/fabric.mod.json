@@ -19,7 +19,7 @@
             "com.dwinovo.anima.AnimaMod"
         ],
         "client": [
-            "com.dwinovo.anima.AnimaModClient"
+            "com.dwinovo.anima.client.AnimaFabricClient"
         ],
         "fabric-datagen": [
             "com.dwinovo.anima.datagen.FabricAnimaDataGenerator"

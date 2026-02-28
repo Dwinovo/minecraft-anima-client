@@ -1,7 +1,7 @@
 package com.dwinovo.anima.telemetry.agent;
 
 import com.dwinovo.anima.Constants;
-import com.dwinovo.anima.entity.IAnimaEntity;
+import com.dwinovo.anima.entity.AnimaEntityProfileResolver;
 import com.dwinovo.anima.telemetry.api.AnimaApiClient;
 import com.dwinovo.anima.telemetry.model.AgentActivateRequest;
 import com.dwinovo.anima.telemetry.model.AgentDeactivateRequest;
@@ -9,6 +9,7 @@ import com.dwinovo.anima.telemetry.session.SessionRegistrationService;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,7 +21,7 @@ public final class AnimaAgentLifecycleService {
     private AnimaAgentLifecycleService() {}
 
     public static void activateOnEntityLoaded(Entity entity, String source) {
-        if (entity.level().isClientSide() || !(entity instanceof IAnimaEntity animaEntity)) {
+        if (entity.level().isClientSide() || !(entity instanceof LivingEntity)) {
             return;
         }
 
@@ -32,7 +33,7 @@ public final class AnimaAgentLifecycleService {
         String sessionId = SessionRegistrationService.getOrCreateSessionId(server);
         String entityUuid = entity.getUUID().toString();
         String entityType = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
-        String profile = animaEntity.profile();
+        String profile = AnimaEntityProfileResolver.resolveProfile(entity);
 
         AgentActivateRequest payload = new AgentActivateRequest(sessionId, entityUuid, entityType, profile);
         AnimaApiClient.postAgentActivate(payload, source).thenAccept(data -> {
@@ -54,9 +55,10 @@ public final class AnimaAgentLifecycleService {
     }
 
     public static void deactivateOnEntityUnloaded(Entity entity, String source) {
-        if (entity.level().isClientSide() || !(entity instanceof IAnimaEntity)) {
+        if (entity.level().isClientSide() || !(entity instanceof LivingEntity)) {
             return;
         }
+        AnimaEntityProfileResolver.clearProfile(entity);
 
         MinecraftServer server = entity.level().getServer();
         if (server == null) {

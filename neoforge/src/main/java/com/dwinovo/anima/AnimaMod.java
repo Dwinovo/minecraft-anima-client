@@ -3,7 +3,6 @@ package com.dwinovo.anima;
 
 import com.dwinovo.anima.command.AnimaCommand;
 import com.dwinovo.anima.entity.AnimaEntityProfileLogger;
-import com.dwinovo.anima.registry.NeoForgeEntityRegistry;
 import com.dwinovo.anima.telemetry.agent.AnimaAgentLoadHandler;
 import com.dwinovo.anima.telemetry.agent.AnimaAgentUnloadHandler;
 import com.dwinovo.anima.telemetry.event.attack.EntityAttackTelemetryReporter;
@@ -32,10 +31,6 @@ public class AnimaMod {
         // Use NeoForge to bootstrap the Common mod.
         Constants.LOG.info("Hello NeoForge world!");
         CommonClass.init();
-        NeoForgeEntityRegistry.register(eventBus);
-
-        eventBus.addListener(NeoForgeEntityRegistry::onEntityAttributes);
-        eventBus.addListener(NeoForgeEntityRegistry::onBuildCreativeTabs);
 
         NeoForge.EVENT_BUS.addListener(this::onLivingIncomingDamage);
         NeoForge.EVENT_BUS.addListener(this::onLivingDeath);

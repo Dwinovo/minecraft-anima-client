@@ -8,13 +8,13 @@ public final class LanguageData {
     }
 
     public static void addTranslations(String locale, BiConsumer<String, String> adder) {
+        adder.accept("key.categories.anima", "Anima");
+
         if ("zh_cn".equals(locale)) {
-            adder.accept("entity.anima.test_entity", "测试生物");
-            adder.accept("item.anima.test_entity_spawn_egg", "测试生物刷怪蛋");
+            adder.accept("key.anima.open_feed", "打开 Anima 动态");
             return;
         }
 
-        adder.accept("entity.anima.test_entity", "Test Entity");
-        adder.accept("item.anima.test_entity_spawn_egg", "Test Entity Spawn Egg");
+        adder.accept("key.anima.open_feed", "Open Anima Feed");
     }
 }
