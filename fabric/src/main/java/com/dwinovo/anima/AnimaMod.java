@@ -1,11 +1,11 @@
 package com.dwinovo.anima;
 
 import com.dwinovo.anima.command.AnimaCommand;
-import com.dwinovo.anima.telemetry.EntityAttackTelemetryReporter;
-import com.dwinovo.anima.telemetry.SocialEventTelemetryReporter;
-import com.dwinovo.anima.telemetry.SessionRegistrationService;
-import com.dwinovo.anima.telemetry.AnimaAgentLoadHandler;
-import com.dwinovo.anima.telemetry.AnimaAgentUnloadHandler;
+import com.dwinovo.anima.telemetry.event.attack.EntityAttackTelemetryReporter;
+import com.dwinovo.anima.telemetry.event.death.DeathEventTelemetryReporter;
+import com.dwinovo.anima.telemetry.session.SessionRegistrationService;
+import com.dwinovo.anima.telemetry.agent.AnimaAgentLoadHandler;
+import com.dwinovo.anima.telemetry.agent.AnimaAgentUnloadHandler;
 import com.dwinovo.anima.entity.AnimaEntityProfileLogger;
 import com.dwinovo.anima.registry.FabricEntityRegistry;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
@@ -39,7 +39,7 @@ public class AnimaMod implements ModInitializer {
         );
 
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) ->
-            SocialEventTelemetryReporter.reportLivingDeath(entity, damageSource, "fabric-after-death")
+            DeathEventTelemetryReporter.reportLivingDeath(entity, damageSource, "fabric-after-death")
         );
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
@@ -60,3 +60,5 @@ public class AnimaMod implements ModInitializer {
         );
     }
 }
+
+

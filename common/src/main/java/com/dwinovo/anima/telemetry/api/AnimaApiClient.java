@@ -1,4 +1,4 @@
-package com.dwinovo.anima.telemetry;
+package com.dwinovo.anima.telemetry.api;
 
 import com.dwinovo.anima.Constants;
 import com.dwinovo.anima.telemetry.model.AgentActivateRequest;
@@ -513,3 +513,4 @@ public final class AnimaApiClient {
         }
     }
 }
+

@@ -1,4 +1,4 @@
-package com.dwinovo.anima.telemetry;
+package com.dwinovo.anima.telemetry.event.helped;
 
 import com.dwinovo.anima.telemetry.model.EventRequest;
 
@@ -430,3 +430,4 @@ final class HelpedEventDetector {
         EntitySnapshot victimSnapshot
     ) {}
 }
+

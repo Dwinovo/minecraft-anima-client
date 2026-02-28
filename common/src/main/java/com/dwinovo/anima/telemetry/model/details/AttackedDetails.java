@@ -8,7 +8,7 @@ public record AttackedDetails(
     float attack_damage,
     float victim_health_before,
     float victim_health_after
-) {
+) implements EventDetails {
     public Map<String, Object> toMap() {
         Map<String, Object> details = new LinkedHashMap<>();
         details.put("attack_tool", attack_tool);

@@ -1,5 +1,6 @@
-package com.dwinovo.anima.telemetry;
+package com.dwinovo.anima.telemetry.event.helped;
 
+import com.dwinovo.anima.telemetry.api.AnimaApiClient;
 import com.dwinovo.anima.telemetry.model.EventRequest;
 import org.junit.jupiter.api.Test;
 
@@ -115,3 +116,4 @@ class HelpedEventTelemetryReporterTest {
         public void warn(String message, Object... args) {}
     };
 }
+

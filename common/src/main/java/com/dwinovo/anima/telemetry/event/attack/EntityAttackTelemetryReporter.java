@@ -1,13 +1,17 @@
-package com.dwinovo.anima.telemetry;
+package com.dwinovo.anima.telemetry.event.attack;
 
-import com.dwinovo.anima.Constants;
 import com.dwinovo.anima.entity.IAnimaEntity;
+import com.dwinovo.anima.telemetry.event.core.EventUploadReporter;
+import com.dwinovo.anima.telemetry.event.helped.HelpedEventTelemetryReporter;
 import com.dwinovo.anima.telemetry.model.EventRequest;
+import com.dwinovo.anima.telemetry.session.SessionRegistrationService;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 
 public final class EntityAttackTelemetryReporter {
+
+    private static final EventUploadReporter EVENT_UPLOADER = new EventUploadReporter();
 
     private EntityAttackTelemetryReporter() {}
 
@@ -61,31 +65,7 @@ public final class EntityAttackTelemetryReporter {
             source,
             sessionId
         );
-        AnimaApiClient.postEvent(payload, source).thenAccept(data -> {
-            if (data == null) {
-                Constants.LOG.warn("[{}] Event upload failed for entity_uuid={}", source, target.getUUID());
-                return;
-            }
-
-            String ackSessionId = data.session_id();
-            if (ackSessionId == null || ackSessionId.isBlank()) {
-                Constants.LOG.warn("[{}] Event upload acknowledged without session_id for entity_uuid={}", source, target.getUUID());
-                return;
-            }
-
-            if (!sessionId.equals(ackSessionId)) {
-                Constants.LOG.warn(
-                    "[{}] Event upload acknowledged with mismatched session_id={} (expected={}) for entity_uuid={}",
-                    source,
-                    ackSessionId,
-                    sessionId,
-                    target.getUUID()
-                );
-                return;
-            }
-
-            Constants.LOG.info("[{}] Event created, session_id={}, entity_uuid={}", source, ackSessionId, target.getUUID());
-        });
+        EVENT_UPLOADER.upload(sessionId, payload, source, "Event", "entity_uuid", target.getUUID().toString());
     }
 
     private static float clampHealth(float health, float maxHealth) {
@@ -95,3 +75,4 @@ public final class EntityAttackTelemetryReporter {
         return Math.min(health, maxHealth);
     }
 }
+

@@ -1,4 +1,4 @@
-package com.dwinovo.anima.telemetry;
+package com.dwinovo.anima.telemetry.agent;
 
 import net.minecraft.world.entity.Entity;
 
@@ -10,3 +10,4 @@ public final class AnimaAgentUnloadHandler {
         AnimaAgentLifecycleService.deactivateOnEntityUnloaded(entity, source);
     }
 }
+

@@ -1,4 +1,4 @@
-package com.dwinovo.anima.telemetry;
+package com.dwinovo.anima.telemetry.api;
 
 import com.dwinovo.anima.telemetry.model.AgentLifecycleResponse;
 import org.junit.jupiter.api.Test;
@@ -70,3 +70,4 @@ class AnimaApiClientAgentLifecycleResponseTest {
         assertNull(data);
     }
 }
+

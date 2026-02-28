@@ -1,7 +1,7 @@
 package com.dwinovo.anima.command;
 
-import com.dwinovo.anima.telemetry.AnimaApiClient;
-import com.dwinovo.anima.telemetry.SessionRegistrationService;
+import com.dwinovo.anima.telemetry.api.AnimaApiClient;
+import com.dwinovo.anima.telemetry.session.SessionRegistrationService;
 import com.dwinovo.anima.telemetry.model.TickResponse;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;
@@ -109,3 +109,4 @@ public final class AnimaCommand {
         return value;
     }
 }
+

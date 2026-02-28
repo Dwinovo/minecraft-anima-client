@@ -1,6 +1,7 @@
-package com.dwinovo.anima.telemetry;
+package com.dwinovo.anima.telemetry.session;
 
 import com.dwinovo.anima.Constants;
+import com.dwinovo.anima.telemetry.api.AnimaApiClient;
 import com.google.gson.JsonObject;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -43,3 +44,4 @@ public final class SessionRegistrationService {
         return sessionData.getOrCreateSessionId();
     }
 }
+

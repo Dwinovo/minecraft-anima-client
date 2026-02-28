@@ -8,7 +8,7 @@ import java.util.Map;
 
 public record KilledDetails(
     String death_reason
-) {
+) implements EventDetails {
     public static KilledDetails fromNative(DamageSource damageSource, LivingEntity victim) {
         return new KilledDetails(damageSource.getLocalizedDeathMessage(victim).getString());
     }

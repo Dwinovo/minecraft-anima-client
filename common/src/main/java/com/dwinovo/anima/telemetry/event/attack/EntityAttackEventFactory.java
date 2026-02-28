@@ -1,13 +1,13 @@
-package com.dwinovo.anima.telemetry;
+package com.dwinovo.anima.telemetry.event.attack;
 
+import com.dwinovo.anima.telemetry.event.core.EventRequestAssembler;
+import com.dwinovo.anima.telemetry.event.core.EventRequestEntityMapper;
 import com.dwinovo.anima.telemetry.model.EventRequest;
 import com.dwinovo.anima.telemetry.model.EventVerb;
 import com.dwinovo.anima.telemetry.model.details.AttackedDetails;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-
-import java.time.Instant;
 
 public final class EntityAttackEventFactory {
 
@@ -29,12 +29,12 @@ public final class EntityAttackEventFactory {
             victimHealthAfter
         );
 
-        return new EventRequest(
+        return EventRequestAssembler.build(
             sessionId,
             target.level().getGameTime(),
-            Instant.now().toString(),
             toSubject(attacker, target),
-            new EventRequest.ActionRequest(EventVerb.ATTACKED.value(), details.toMap()),
+            EventVerb.ATTACKED,
+            details,
             EventRequestEntityMapper.toEntity(target)
         );
     }
@@ -46,3 +46,4 @@ public final class EntityAttackEventFactory {
         return EventRequestEntityMapper.toEntity(attacker);
     }
 }
+

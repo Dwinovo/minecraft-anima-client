@@ -1,18 +1,18 @@
-package com.dwinovo.anima.telemetry;
+package com.dwinovo.anima.telemetry.event.core;
 
 import com.dwinovo.anima.telemetry.model.EventRequest;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 
-final class EventRequestEntityMapper {
+public final class EventRequestEntityMapper {
 
     private static final EventRequest.EntityStateRequest EMPTY_STATE =
         new EventRequest.EntityStateRequest(0.0F, 0.0F);
 
     private EventRequestEntityMapper() {}
 
-    static EventRequest.EntityRequest toEnvironment(Entity referenceEntity) {
+    public static EventRequest.EntityRequest toEnvironment(Entity referenceEntity) {
         return new EventRequest.EntityRequest(
             "environment",
             "minecraft:environment",
@@ -22,7 +22,7 @@ final class EventRequestEntityMapper {
         );
     }
 
-    static EventRequest.EntityRequest toEntity(Entity entity) {
+    public static EventRequest.EntityRequest toEntity(Entity entity) {
         if (entity == null) {
             return null;
         }
@@ -35,7 +35,7 @@ final class EventRequestEntityMapper {
         );
     }
 
-    static EventRequest.LocationRequest toLocation(Entity entity) {
+    public static EventRequest.LocationRequest toLocation(Entity entity) {
         if (entity == null) {
             return null;
         }
@@ -51,14 +51,14 @@ final class EventRequestEntityMapper {
         );
     }
 
-    static String toEntityType(Entity entity) {
+    public static String toEntityType(Entity entity) {
         if (entity == null) {
             return null;
         }
         return BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
     }
 
-    static String toWeapon(Entity entity) {
+    public static String toWeapon(Entity entity) {
         if (!(entity instanceof LivingEntity living)) {
             return null;
         }
@@ -75,3 +75,4 @@ final class EventRequestEntityMapper {
         return EMPTY_STATE;
     }
 }
+

@@ -3,8 +3,7 @@ package com.dwinovo.anima.telemetry.model;
 public enum EventVerb {
     ATTACKED("ATTACKED"),
     KILLED("KILLED"),
-    HELPED("HELPED"),
-    PLAYER_CHAT("PLAYER_CHAT");
+    HELPED("HELPED");
 
     private final String value;
 

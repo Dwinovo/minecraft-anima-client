@@ -1,4 +1,4 @@
-package com.dwinovo.anima.telemetry;
+package com.dwinovo.anima.telemetry.api;
 
 import com.dwinovo.anima.telemetry.model.TickResponse;
 import org.junit.jupiter.api.Test;
@@ -85,3 +85,4 @@ class AnimaApiClientTickResponseTest {
         assertNull(data);
     }
 }
+

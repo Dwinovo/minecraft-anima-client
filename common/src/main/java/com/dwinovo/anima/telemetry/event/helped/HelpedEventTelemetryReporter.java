@@ -1,5 +1,7 @@
-package com.dwinovo.anima.telemetry;
+package com.dwinovo.anima.telemetry.event.helped;
 
+import com.dwinovo.anima.telemetry.api.AnimaApiClient;
+import com.dwinovo.anima.telemetry.event.core.EventRequestEntityMapper;
 import com.dwinovo.anima.telemetry.model.EventRequest;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
@@ -92,3 +94,4 @@ public final class HelpedEventTelemetryReporter {
         );
     }
 }
+

@@ -1,9 +1,11 @@
-package com.dwinovo.anima.telemetry;
+package com.dwinovo.anima.telemetry.agent;
 
 import com.dwinovo.anima.Constants;
 import com.dwinovo.anima.entity.IAnimaEntity;
+import com.dwinovo.anima.telemetry.api.AnimaApiClient;
 import com.dwinovo.anima.telemetry.model.AgentActivateRequest;
 import com.dwinovo.anima.telemetry.model.AgentDeactivateRequest;
+import com.dwinovo.anima.telemetry.session.SessionRegistrationService;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.Entity;
@@ -108,3 +110,4 @@ public final class AnimaAgentLifecycleService {
         return sessionId + ":" + entityUuid;
     }
 }
+

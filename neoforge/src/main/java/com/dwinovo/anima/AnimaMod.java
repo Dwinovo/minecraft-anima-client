@@ -4,11 +4,11 @@ package com.dwinovo.anima;
 import com.dwinovo.anima.command.AnimaCommand;
 import com.dwinovo.anima.entity.AnimaEntityProfileLogger;
 import com.dwinovo.anima.registry.NeoForgeEntityRegistry;
-import com.dwinovo.anima.telemetry.AnimaAgentLoadHandler;
-import com.dwinovo.anima.telemetry.AnimaAgentUnloadHandler;
-import com.dwinovo.anima.telemetry.EntityAttackTelemetryReporter;
-import com.dwinovo.anima.telemetry.SocialEventTelemetryReporter;
-import com.dwinovo.anima.telemetry.SessionRegistrationService;
+import com.dwinovo.anima.telemetry.agent.AnimaAgentLoadHandler;
+import com.dwinovo.anima.telemetry.agent.AnimaAgentUnloadHandler;
+import com.dwinovo.anima.telemetry.event.attack.EntityAttackTelemetryReporter;
+import com.dwinovo.anima.telemetry.event.death.DeathEventTelemetryReporter;
+import com.dwinovo.anima.telemetry.session.SessionRegistrationService;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
@@ -56,7 +56,7 @@ public class AnimaMod {
     }
 
     private void onLivingDeath(LivingDeathEvent event) {
-        SocialEventTelemetryReporter.reportLivingDeath(
+        DeathEventTelemetryReporter.reportLivingDeath(
             event.getEntity(),
             event.getSource(),
             "neoforge-living-death"
@@ -87,3 +87,5 @@ public class AnimaMod {
         AnimaCommand.register(event.getDispatcher());
     }
 }
+
+

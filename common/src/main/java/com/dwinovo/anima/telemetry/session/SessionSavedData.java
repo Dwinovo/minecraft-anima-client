@@ -1,4 +1,4 @@
-package com.dwinovo.anima.telemetry;
+package com.dwinovo.anima.telemetry.session;
 
 import com.dwinovo.anima.Constants;
 import net.minecraft.core.HolderLookup;
@@ -58,3 +58,4 @@ public final class SessionSavedData extends SavedData {
         return value;
     }
 }
+
