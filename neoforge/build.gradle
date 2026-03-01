@@ -5,16 +5,40 @@ plugins {
 
 dependencies {
     def okhttpDep = "com.squareup.okhttp3:okhttp:${okhttp_version}"
+    def modernUiCoreDep = 'icyllis.modernui:ModernUI-Core:3.12.0'
+    def modernUiMarkflowDep = 'icyllis.modernui:ModernUI-Markflow:3.12.0'
+    def modernUiNeoForgeDep = "icyllis.modernui:ModernUI-NeoForge:${minecraft_version}-3.12.0.2@jar"
 
     jarJar(implementation(okhttpDep))
+    compileOnly(modernUiCoreDep) {
+        transitive = false
+    }
+    compileOnly(modernUiMarkflowDep) {
+        transitive = false
+    }
+    implementation modernUiNeoForgeDep
 }
 
 afterEvaluate {
     def okhttpDep = "com.squareup.okhttp3:okhttp:${okhttp_version}"
+    def modernUiCoreDep = 'icyllis.modernui:ModernUI-Core:3.12.0'
+    def modernUiMarkflowDep = 'icyllis.modernui:ModernUI-Markflow:3.12.0'
+    def modernUiNeoForgeDep = "icyllis.modernui:ModernUI-NeoForge:${minecraft_version}-3.12.0.2@jar"
+    def modernUiExclude = {
+        exclude group: 'org.slf4j', module: 'slf4j-api'
+        exclude group: 'org.apache.logging.log4j', module: 'log4j-core'
+        exclude group: 'org.apache.logging.log4j', module: 'log4j-api'
+        exclude group: 'com.google.code.findbugs', module: 'jsr305'
+        exclude group: 'org.jetbrains', module: 'annotations'
+        exclude group: 'com.ibm.icu', module: 'icu4j'
+        exclude group: 'it.unimi.dsi', module: 'fastutil'
+    }
     dependencies {
         add("clientAdditionalRuntimeClasspath", okhttpDep)
         add("serverAdditionalRuntimeClasspath", okhttpDep)
         add("dataAdditionalRuntimeClasspath", okhttpDep)
+        add("clientAdditionalRuntimeClasspath", dependencies.create(modernUiCoreDep, modernUiExclude))
+        add("clientAdditionalRuntimeClasspath", dependencies.create(modernUiMarkflowDep, modernUiExclude))
     }
 }
 

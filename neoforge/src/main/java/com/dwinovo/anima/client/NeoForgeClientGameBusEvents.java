@@ -28,13 +28,13 @@ public final class NeoForgeClientGameBusEvents {
         if (client.player == null) {
             return;
         }
-        if (client.screen instanceof SessionFeedScreen) {
+        if (SessionFeedScreen.isOpenOn(client.screen)) {
             client.setScreen(null);
             return;
         }
 
         MinecraftServer server = client.getSingleplayerServer();
         String sessionId = server == null ? null : SessionRegistrationService.peekCachedSessionId(server);
-        client.setScreen(new SessionFeedScreen(sessionId));
+        client.setScreen(SessionFeedScreen.create(sessionId, client.screen));
     }
 }
