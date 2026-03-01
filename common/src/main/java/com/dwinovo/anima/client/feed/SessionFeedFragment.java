@@ -4,6 +4,7 @@ import com.dwinovo.anima.telemetry.api.AnimaApiClient;
 import com.dwinovo.anima.telemetry.model.SessionSnapshotResponse;
 import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.annotation.Nullable;
+import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.util.DataSet;
 import icyllis.modernui.view.Gravity;
@@ -14,7 +15,6 @@ import icyllis.modernui.widget.Button;
 import icyllis.modernui.widget.LinearLayout;
 import icyllis.modernui.widget.ScrollView;
 import icyllis.modernui.widget.TextView;
-import net.minecraft.client.Minecraft;
 
 import static icyllis.modernui.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static icyllis.modernui.view.ViewGroup.LayoutParams.WRAP_CONTENT;
@@ -140,7 +140,7 @@ public final class SessionFeedFragment extends Fragment {
         renderState();
 
         AnimaApiClient.getSessionSnapshot(sessionId, REQUEST_SOURCE).whenComplete((data, throwable) ->
-            Minecraft.getInstance().execute(() -> {
+            Core.executeOnUiThread(() -> {
                 if (currentRequestVersion != requestVersion) {
                     return;
                 }
