@@ -1,0 +1,89 @@
+plugins {
+    id 'multiloader-loader'
+    id 'net.neoforged.moddev'
+}
+
+neoForge {
+    version = neoforge_version
+    // Automatically enable neoforge AccessTransformers if the file exists
+    def at = project(':common').file('src/main/resources/META-INF/accesstransformer.cfg')
+    if (at.exists()) {
+        accessTransformers.from(at.absolutePath)
+    }
+    parchment {
+        minecraftVersion = parchment_minecraft
+        mappingsVersion = parchment_version
+    }
+    runs {
+        configureEach {
+            systemProperty('neoforge.enabledGameTestNamespaces', mod_id)
+            ideName = "NeoForge ${it.name.capitalize()} (${project.path})" // Unify the run config names with fabric
+        }
+        client {
+            client()
+        }
+        data {
+            data()
+
+            // DataGen can be run by - "./gradlew :neoforge:runData" in Terminal.
+            // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
+            programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+
+        }
+        server {
+            server()
+        }
+    }
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+dependencies {
+    implementation "icyllis.modernui:ModernUI-NeoForge:${minecraft_version}-${modernui_mc_version}"
+    additionalRuntimeClasspath(compileOnly("icyllis.modernui:ModernUI-Core:${modernui_version}")) {
+        exclude group: "org.slf4j", module: "slf4j-api"
+        exclude group: "org.apache.logging.log4j", module: "log4j-core"
+        exclude group: "org.apache.logging.log4j", module: "log4j-api"
+        exclude group: "com.google.code.findbugs", module: "jsr305"
+        exclude group: "org.jetbrains", module: "annotations"
+        exclude group: "com.ibm.icu", module: "icu4j"
+        exclude group: "it.unimi.dsi", module: "fastutil"
+    }
+    additionalRuntimeClasspath(compileOnly("icyllis.modernui:ModernUI-Markflow:${modernui_version}")) {
+        exclude group: "org.slf4j", module: "slf4j-api"
+        exclude group: "org.apache.logging.log4j", module: "log4j-core"
+        exclude group: "org.apache.logging.log4j", module: "log4j-api"
+        exclude group: "com.google.code.findbugs", module: "jsr305"
+        exclude group: "org.jetbrains", module: "annotations"
+        exclude group: "com.ibm.icu", module: "icu4j"
+        exclude group: "it.unimi.dsi", module: "fastutil"
+    }
+
+    implementation "com.squareup.okhttp3:okhttp-jvm:${okhttp_version}"
+    implementation "com.squareup.okio:okio-jvm:${okio_version}"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:${kotlin_stdlib_version}"
+
+    jarJar("com.squareup.okhttp3:okhttp-jvm:${okhttp_version}") {
+        version {
+            strictly "[${okhttp_version}]"
+            prefer "${okhttp_version}"
+        }
+    }
+    jarJar("com.squareup.okio:okio-jvm:${okio_version}") {
+        version {
+            strictly "[${okio_version}]"
+            prefer "${okio_version}"
+        }
+    }
+    jarJar("org.jetbrains.kotlin:kotlin-stdlib:${kotlin_stdlib_version}") {
+        version {
+            strictly "[${kotlin_stdlib_version}]"
+            prefer "${kotlin_stdlib_version}"
+        }
+    }
+}
